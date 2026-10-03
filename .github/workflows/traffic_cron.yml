@@ -1,0 +1,48 @@
+name: TomTom Traffic Data Collector
+
+on:
+  schedule:
+    # Run automatically every 15 minutes
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # Allow manual trigger from GitHub UI for testing
+
+jobs:
+  collect-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grant bot permission to push CSV updates
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11" # Target Python version
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas
+
+      - name: Run Data Collection Script
+        env:
+          # Inject the GitHub Secret as an environment variable
+          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }} 
+        # Ensure this path matches where your script is located
+        run: python scripts/traffic_data_collect.py
+
+      - name: Commit and Push Data to GitHub
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Stage the updated CSV file
+          git add data/traffic_data.csv
+          
+          # Commit changes if they exist; otherwise, skip gracefully
+          git commit -m "Auto-update: Fetch traffic data [skip ci]" || echo "No changes to commit"
+          
+          # Push the new data back to the main branch
+          git push
