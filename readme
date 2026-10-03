@@ -1,0 +1,26 @@
+# ============================================================
+# 5. HOW TO RUN THIS AUTOMATICALLY FOR SEVERAL WEEKS
+# ============================================================
+#
+# OPTION A — Windows (Task Scheduler):
+#   1. Open "Task Scheduler" (search in the Start Menu)
+#   2. Create Task -> name it "TrafficDataCollection"
+#   3. Triggers tab -> New -> select "Daily", Repeat task every "15 minutes"
+#      for a duration of "Indefinitely"
+#   4. Actions tab -> New -> Program/script: path to python.exe
+#      Arguments: full path to collect_traffic_data.py
+#      (e.g. C:\Users\you\Desktop\collect_traffic_data.py)
+#   5. Save. The machine must stay on and not sleep for this to run on schedule.
+#
+# OPTION B — Mac/Linux (cron):
+#   1. Open Terminal, type: crontab -e
+#   2. Add this line (runs every 15 minutes):
+#      */15 * * * * /usr/bin/python3 /path/to/collect_traffic_data.py
+#   3. Save and exit.
+#
+# OPTION C — Simplest option if you don't have a machine running 24/7
+#   (collect only while you're studying):
+#   Use the companion script collect_traffic_data_loop.py — it loops
+#   automatically inside Python, just leave it running while you want
+#   to collect data.
+# ============================================================
