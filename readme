@@ -1,26 +1,20 @@
-# ============================================================
-# 5. HOW TO RUN THIS AUTOMATICALLY FOR SEVERAL WEEKS
-# ============================================================
-#
-# OPTION A — Windows (Task Scheduler):
-#   1. Open "Task Scheduler" (search in the Start Menu)
-#   2. Create Task -> name it "TrafficDataCollection"
-#   3. Triggers tab -> New -> select "Daily", Repeat task every "15 minutes"
-#      for a duration of "Indefinitely"
-#   4. Actions tab -> New -> Program/script: path to python.exe
-#      Arguments: full path to collect_traffic_data.py
-#      (e.g. C:\Users\you\Desktop\collect_traffic_data.py)
-#   5. Save. The machine must stay on and not sleep for this to run on schedule.
-#
-# OPTION B — Mac/Linux (cron):
-#   1. Open Terminal, type: crontab -e
-#   2. Add this line (runs every 15 minutes):
-#      */15 * * * * /usr/bin/python3 /path/to/collect_traffic_data.py
-#   3. Save and exit.
-#
-# OPTION C — Simplest option if you don't have a machine running 24/7
-#   (collect only while you're studying):
-#   Use the companion script collect_traffic_data_loop.py — it loops
-#   automatically inside Python, just leave it running while you want
-#   to collect data.
-# ============================================================
+## 5. Automated Data Collection (Cloud Deployment)
+
+This project utilizes **GitHub Actions** to automate the traffic data collection process 24/7. There is no need to keep a local machine running or configure local task schedulers.
+
+### How It Works (CI/CD Pipeline)
+- **Trigger:** A cron job configured in `.github/workflows/traffic_cron.yml` is scheduled to run every 15 minutes (`*/15 * * * *`).
+- **Execution:** A GitHub-hosted Ubuntu runner provisions a Python 3.11 environment, installs necessary dependencies (`requests`, `pandas`), and executes `scripts/traffic_data_collect.py`.
+- **Storage:** The newly fetched data is automatically appended to `data/traffic_data.csv` and pushed back to the main branch of this repository.
+
+### Manual Trigger (For Testing)
+If you need to force an immediate data collection cycle outside the 15-minute schedule:
+1. Navigate to the **Actions** tab in this repository.
+2. Select the **TomTom Traffic Data Collector** workflow from the left sidebar.
+3. Click the **Run workflow** dropdown on the right side of the screen and execute it.
+
+### Security & Configuration
+For security reasons, the TomTom API key is not hardcoded into the scripts. If you fork or clone this repository, you must configure your own API key:
+1. Go to repository **Settings** > **Secrets and variables** > **Actions**.
+2. Click **New repository secret**.
+3. Name it `TOMTOM_API_KEY` and paste your API key as the value.
