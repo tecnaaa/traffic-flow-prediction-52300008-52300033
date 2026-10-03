@@ -38,10 +38,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Tự động đồng bộ các cập nhật mới nhất trên nhánh main về máy chủ ảo
-          git pull --rebase
-          
-          # Thêm file dữ liệu và push
+          # 1. Stage and commit the newly fetched data FIRST
           git add data/traffic_data.csv
           git commit -m "Auto-update: Fetch traffic data [skip ci]" || echo "No changes to commit"
+          
+          # 2. THEN pull the latest changes from the remote repository to avoid conflicts
+          git pull --rebase
+          
+          # 3. FINALLY push everything to GitHub
           git push
