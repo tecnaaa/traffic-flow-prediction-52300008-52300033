@@ -38,11 +38,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Stage the updated CSV file
+          # Tự động đồng bộ các cập nhật mới nhất trên nhánh main về máy chủ ảo
+          git pull --rebase
+          
+          # Thêm file dữ liệu và push
           git add data/traffic_data.csv
-          
-          # Commit changes if they exist; otherwise, skip gracefully
           git commit -m "Auto-update: Fetch traffic data [skip ci]" || echo "No changes to commit"
-          
-          # Push the new data back to the main branch
           git push
