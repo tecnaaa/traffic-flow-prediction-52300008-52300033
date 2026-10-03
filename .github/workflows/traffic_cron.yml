@@ -29,7 +29,9 @@ jobs:
       - name: Run Data Collection Script
         env:
           # Inject the GitHub Secret as an environment variable
-          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }} 
+          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
+          # Force the Ubuntu server to use Vietnam Timezone (UTC+7)
+          TZ: "Asia/Ho_Chi_Minh"
         # Ensure this path matches where your script is located
         run: python scripts/traffic_data_collect.py
 
