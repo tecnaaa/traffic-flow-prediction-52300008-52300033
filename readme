@@ -13,6 +13,9 @@ If you need to force an immediate data collection cycle outside the 15-minute sc
 2. Select the **TomTom Traffic Data Collector** workflow from the left sidebar.
 3. Click the **Run workflow** dropdown on the right side of the screen and execute it.
 
+### Traffic Data Filtering and Charts
+Run `python scripts/traffic_data_graph.py` from the repository root to preprocess the collected data and generate the charts. Rows with `confidence_score_0_to_1` at or below `0.8` are removed. The remaining `congestion_ratio_0_to_1` readings are filtered using the 1.5×IQR bounds calculated separately for each road. The cleaned data and charts are saved in `outputs/`.
+
 ### Security & Configuration
 For security reasons, the TomTom API key is not hardcoded into the scripts. If you fork or clone this repository, you must configure your own API key:
 1. Go to repository **Settings** > **Secrets and variables** > **Actions**.
