@@ -1,0 +1,128 @@
+node_id,road_name
+0,An Dương Vương
+1,Bà Huyện Thanh Quan
+2,Bùi Thị Xuân
+3,Bạch Đằng
+4,Bắc Hải
+5,Bến Vân Đồn
+6,Chu Văn An
+7,Châu Văn Liêm
+8,Cách Mạng Tháng Tám
+9,Công trường Công xã Paris
+10,Cầu Calmette
+11,Cầu Nguyễn Văn Cừ
+12,Cầu Số 2
+13,Cống Quỳnh
+14,Hai Bà Trưng
+15,Hoàng Diệu
+16,Hoàng Văn Thụ
+17,Huỳnh Mẫn Đạt
+18,Huỳnh Văn Bánh
+19,Hàm Nghi
+20,Hùng Vương
+21,Hải Thượng Lãn Ông
+22,Hẻm 468 Đường Phan Văn Trị
+23,Hồ Bá Kiện
+24,Hồng Bàng
+25,Kỳ Ðồng
+26,Lãnh Binh Thăng
+27,Lê Hồng Phong
+28,Lê Lai
+29,Lê Minh Xuân
+30,Lê Quang Định
+31,Lê Quý Đôn
+32,Lê Thánh Tôn
+33,Lê Văn Sỹ
+34,Lê Đại Hành
+35,Lý Chính Thắng
+36,Lý Thái Tổ
+37,Lý Thường Kiệt
+38,Lý Tự Trọng
+39,Mai Chí Thọ
+40,Mạc Cửu
+41,Mạc Đĩnh Chi
+42,Nam Kỳ Khởi Nghĩa
+43,Nghĩa Phát
+44,Nguyễn Chí Thanh
+45,Nguyễn Du
+46,Nguyễn Duy Dương
+47,Nguyễn Gia Trí
+48,Nguyễn Giàn Thanh
+49,Nguyễn Huệ
+50,Nguyễn Hữu Cảnh
+51,Nguyễn Khắc Nhu
+52,Nguyễn Kim
+53,Nguyễn Ngọc Lộc
+54,Nguyễn Oanh
+55,Nguyễn Siêu
+56,Nguyễn Thông
+57,Nguyễn Thị Minh Khai
+58,Nguyễn Thị Nghĩa
+59,Nguyễn Thị Nhỏ
+60,Nguyễn Tri Phương
+61,Nguyễn Trãi
+62,Nguyễn Văn Cừ
+63,Nguyễn Đình Chiểu
+64,Ngô Gia Tự
+65,Ngô Nhân Tịnh
+66,Ngô Quyền
+67,Ngô Thời Nhiệm
+68,Nơ Trang Long
+69,Pasteur
+70,Phan Văn Hân
+71,Phan Đình Phùng
+72,Phạm Văn Đồng
+73,Phó Cơ Điều
+74,Phú Hòa
+75,Phú Hữu
+76,Phường Thạnh Mỹ Tây
+77,Phường Tân Sơn Hòa
+78,Phạm Hồng Thái
+79,Phạm Ngũ Lão
+80,Phạm Ngọc Thạch
+81,Phạm Viết Chánh
+82,Phạm Văn Đồng
+83,Phổ Quang
+84,Quang Trung
+85,Sư Vạn Hạnh
+86,Thuận Kiều
+87,Thành Thái
+88,Tháp Mười
+89,Thủ Khoa Huân
+90,Trương Định
+91,Trường Chinh
+92,Trường Sơn
+93,Trần Bình Trọng
+94,Trần Huy Liệu
+95,Trần Hưng Đạo
+96,Trần Khắc Chân
+97,Trần Nhân Tôn
+98,Trần Quang Khải
+99,Trần Quý
+100,Trần Quốc Thảo
+101,Trần Xuân Soạn
+102,Tuệ Tĩnh
+103,Tô Hiến Thành
+104,Tôn Đản
+105,Tạ Uyên
+106,Vòng xoay Lăng Cha Cả
+107,Võ Nguyên Giáp
+108,Võ Thị Sáu
+109,Võ Văn Kiệt
+110,Võ Văn Tần
+111,Vĩnh Hội
+112,Vĩnh Viễn
+113,Xô Viết Nghệ Tĩnh
+114,Ðề Thám
+115,Út Tịch
+116,Điện Biên Phủ
+117,Đoàn Văn Bơ
+118,Đông Hồ
+119,Đường 3 Tháng 2
+120,Đường Hà Tôn Quyền
+121,Đường Lê Đại Hành
+122,Đường Nguyễn Thượng Hiền
+123,Đường Tôn Thất Hiệp
+124,Đặng Văn Ngữ
+125,Đồng Khởi
+126,Đỗ Ngọc Thạnh

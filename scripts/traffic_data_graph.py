@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -45,6 +47,54 @@ def filter_traffic_data(data):
         f"IQR filter: {len(confident_data) - len(filtered_data)} rows removed."
     )
     return filtered_data
+
+def generate_correlation_adj_matrix():
+    npz_file = 'outputs/HCMC_Traffic_Data.npz'
+    output_csv = 'outputs/correlation_matrix.csv'
+    output_npy = 'outputs/adj_matrix.npy'
+    
+    # 1. Load the Spatio-Temporal Tensor
+    if not os.path.exists(npz_file):
+        print(f"[ERROR] Cannot find {npz_file}. Please run prepare_pems_dataset.py first.")
+        return
+        
+    print(f"Loading data from {npz_file}...")
+    dataset = np.load(npz_file)['data']  # Shape: (T, N, F)
+    
+    # Extract the speed feature (F=0) and transpose to (N, T) for correlation calculation
+    # We need rows to be nodes and columns to be time steps
+    speed_data = dataset[:, :, 0].T
+    N, T = speed_data.shape
+    print(f"Extracted speed matrix shape: {speed_data.shape} (Nodes, Time steps)")
+
+    # 2. Compute Pearson Correlation Matrix
+    print("Computing Pearson Correlation Coefficient matrix...")
+    # np.corrcoef expects rows to represent variables (nodes) and columns to represent observations (time)
+    corr_matrix = np.corrcoef(speed_data)
+    
+    # Handle potential NaN values (e.g., if a node's speed is completely flat/constant, variance is 0)
+    corr_matrix = np.nan_to_num(corr_matrix, nan=0.0)
+
+    # 3. Sparsify the Adjacency Matrix (Thresholding)
+    threshold = 0.5  # Epsilon value; can be tuned based on GNN performance
+    print(f"Applying threshold epsilon = {threshold} to sparsify the graph...")
+    
+    adj_matrix = np.where(corr_matrix >= threshold, corr_matrix, 0.0)
+    
+    # Optional: Remove self-loops (setting diagonal to 0) depending on GNN architecture requirements
+    np.fill_diagonal(adj_matrix, 0.0)
+
+    # 4. Save Outputs
+    # Save as CSV for human readability and debugging
+    df_adj = pd.DataFrame(adj_matrix)
+    df_adj.to_csv(output_csv, index=False, header=False)
+    
+    # Save as .npy for fast loading during model training
+    np.save(output_npy, adj_matrix)
+    
+    print(f"-> Successfully saved Adjacency Matrix (CSV): {output_csv}")
+    print(f"-> Successfully saved Adjacency Matrix (Numpy): {output_npy}")
+    print(f"-> Graph Density: {(np.count_nonzero(adj_matrix) / (N * N)) * 100:.2f}% edges retained.")
 
 # ---------------------------------------------------------
 # 1. DATA PREPROCESSING
@@ -155,3 +205,7 @@ plt.savefig(OUTPUT_DIR / 'timeseries_congestion.png', dpi=300)
 plt.show()
 
 print("Successfully generated and saved 2 charts: heatmap_correlation.png and timeseries_congestion.png")
+
+#---------------------------------------------------------
+if __name__ == "__main__":
+    generate_correlation_adj_matrix()
