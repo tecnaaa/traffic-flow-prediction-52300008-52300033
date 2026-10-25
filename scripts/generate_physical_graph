@@ -1,0 +1,71 @@
+import numpy as np
+import pandas as pd
+import math
+import os
+
+def haversine(lat1, lon1, lat2, lon2):
+    """
+    Calculate the great circle distance in kilometers between two points.
+    """
+    R = 6371.0 # Radius of the Earth in km
+    
+    lat1_rad, lon1_rad = math.radians(lat1), math.radians(lon1)
+    lat2_rad, lon2_rad = math.radians(lat2), math.radians(lon2)
+    
+    dlon = lon2_rad - lon1_rad
+    dlat = lat2_rad - lat1_rad
+    
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    return R * c
+
+def generate_physical_adjacency(raw_nodes_file, mapping_file, output_file, sigma2=10, threshold=2.0):
+    print(f"Loading raw nodes from: {raw_nodes_file}")
+    raw_df = pd.read_csv(raw_nodes_file)
+    
+    # Calculate central coordinate (mean lat/lon) for each road
+    coords_df = raw_df.groupby('road_name')[['lat', 'lon']].mean().reset_index()
+    
+    print(f"Loading aligned 127-node mapping from: {mapping_file}")
+    mapping_df = pd.read_csv(mapping_file)
+    
+    # Merge and strictly preserve the 0-126 node_id order
+    merged_df = pd.merge(mapping_df, coords_df, on='road_name', how='left')
+    merged_df = merged_df.sort_values('node_id').reset_index(drop=True)
+        
+    num_nodes = len(merged_df)
+    dist_matrix = np.zeros((num_nodes, num_nodes))
+    
+    print(f"Calculating Haversine distances for {num_nodes} aligned nodes...")
+    for i in range(num_nodes):
+        for j in range(num_nodes):
+            if i != j:
+                dist_matrix[i, j] = haversine(
+                    merged_df.loc[i, 'lat'], merged_df.loc[i, 'lon'],
+                    merged_df.loc[j, 'lat'], merged_df.loc[j, 'lon']
+                )
+            
+    # Apply Gaussian kernel
+    print("Applying Gaussian kernel to construct physical graph...")
+    adj_matrix = np.zeros((num_nodes, num_nodes))
+    for i in range(num_nodes):
+        for j in range(num_nodes):
+            if dist_matrix[i, j] <= threshold:
+                adj_matrix[i, j] = np.exp(-(dist_matrix[i, j]**2) / sigma2)
+                
+    np.save(output_file, adj_matrix)
+    print(f"Physical adjacency matrix shape: {adj_matrix.shape} successfully saved to: {output_file}")
+    
+    density = np.sum(adj_matrix > 0) / (num_nodes * num_nodes) * 100
+    print(f"Physical Graph Density: {density:.2f}% edges retained.")
+
+if __name__ == "__main__":
+    os.makedirs('outputs', exist_ok=True)
+    generate_physical_adjacency(
+        raw_nodes_file='data/hcmc_nodes.csv', 
+        mapping_file='outputs/road_nodes_mapping.csv',
+        output_file='outputs/physical_adj_matrix.npy',
+        sigma2=10,        # Variance parameter
+        threshold=2.0     # Max distance in km
+    )
