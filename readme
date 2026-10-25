@@ -1,23 +1,99 @@
-## 5. Automated Data Collection (Cloud Deployment)
+# HCMC Traffic Flow Prediction System
 
-This project utilizes **GitHub Actions** to automate the traffic data collection process 24/7. There is no need to keep a local machine running or configure local task schedulers.
+A complete machine learning and data engineering pipeline designed to collect real-time traffic data from Ho Chi Minh City (HCMC), process it into spatio-temporal structures compatible with standard benchmarks (PeMSD8), build data-driven adjacency matrices, and train Spatio-Temporal Graph Neural Networks (STGCN) for traffic forecasting.
+
+---
+
+## 1. Project Directory Structure
+
+```text
+TRAFFIC-FLOW-PREDICTION/
+│
+├── .github/
+│   └── workflows/
+│       └── traffic_cron.yml      # GitHub Actions CI/CD for automated 24/7 collection
+├── data/
+│   ├── hcmc_nodes.csv            # Monitored road nodes extracted via OSM
+│   └── traffic_data.csv          # Raw and appended real-time traffic records
+├── models/
+│   └── stgcn.py                  # STGCN baseline model architecture
+├── outputs/
+│   ├── adj_matrix.npy            # Processed spatial adjacency matrix
+│   ├── correlation_matrix.csv    # Pearson correlation matrix (CSV format)
+│   ├── HCMC_Traffic_Data.npz     # 3D Tensor dataset format (T, N, F)
+│   └── *.png                     # Generated correlation heatmaps & timeseries charts
+├── scripts/
+│   ├── data_loader.py            # PyTorch sliding window dataset & standard scaler
+│   ├── get_hcmc_nodes.py         # OpenStreetMap road node extractor
+│   ├── prepare_pems_dataset.py   # Tensor packaging & data cleaning pipeline
+│   ├── traffic_data_collect.py   # Multi-key rotation TomTom API collector
+│   └── traffic_data_graph.py     # Pearson correlation graph builder
+├── utils/
+│   └── metrics.py                # Evaluation metrics (Masked MAE, RMSE, MAPE)
+├── .env                          # Local environment variables (API keys)
+├── .gitignore                    # Git ignore file
+├── README.md                     # Project documentation
+└── train.py                      # Main training script for baseline benchmarking
+```
+
+---
+
+## 2. Automated Data Collection & Security
+
+This project utilizes **GitHub Actions** to automate traffic data collection 24/7 without needing local task schedulers.
 
 ### How It Works (CI/CD Pipeline)
-- **Trigger:** A cron job configured in `.github/workflows/traffic_cron.yml` is scheduled to run every 15 minutes (`*/15 * * * *`).
-- **Execution:** A GitHub-hosted Ubuntu runner provisions a Python 3.11 environment, installs necessary dependencies (`requests`, `pandas`), and executes `scripts/traffic_data_collect.py`.
-- **Storage:** The newly fetched data is automatically appended to `data/traffic_data.csv` and pushed back to the main branch of this repository.
+- **Trigger:** Configured in `.github/workflows/traffic_cron.yml` to run every 15 minutes (`*/15 * * * *`).
+- **Execution:** Provisions an Ubuntu runner, installs dependencies (`requests`, `pandas`), and runs `scripts/traffic_data_collect.py`.
+- **Key Rotation & Security:** To bypass daily rate limits, the script supports multi-account API key rotation via environment variables.
 
-### Manual Trigger (For Testing)
-If you need to force an immediate data collection cycle outside the 15-minute schedule:
-1. Navigate to the **Actions** tab in this repository.
-2. Select the **TomTom Traffic Data Collector** workflow from the left sidebar.
-3. Click the **Run workflow** dropdown on the right side of the screen and execute it.
+### Configuration (`.env` or GitHub Secrets)
+Do not hardcode API keys. For local testing, create a `.env` file at the root directory:
+```env
+TOMTOM_API_KEYS="key1,key2,key3,key4"
+```
+For GitHub Actions, add `TOMTOM_API_KEYS` under repository **Settings > Secrets and variables > Actions**.
 
-### Traffic Data Filtering and Charts
-Run `python scripts/traffic_data_graph.py` from the repository root to preprocess the collected data and generate the charts. Rows with `confidence_score_0_to_1` at or below `0.8` are removed. The remaining `congestion_ratio_0_to_1` readings are filtered using the 1.5×IQR bounds calculated separately for each road. The cleaned data and charts are saved in `outputs/`.
+---
 
-### Security & Configuration
-For security reasons, the TomTom API key is not hardcoded into the scripts. If you fork or clone this repository, you must configure your own API key:
-1. Go to repository **Settings** > **Secrets and variables** > **Actions**.
-2. Click **New repository secret**.
-3. Name it `TOMTOM_API_KEY` and paste your API key as the value.
+## 3. Data Preprocessing & Graph Construction
+
+1. **Data Cleaning & Tensor Packaging:**
+   Run the preprocessing script to clean raw records, filter via confidence scores and IQR bounds, and package them into standard 3D tensors:
+   ```bash
+   python scripts/prepare_pems_dataset.py
+   ```
+   * Output: `outputs/HCMC_Traffic_Data.npz` of shape `(T, N, F)`.
+
+2. **Dynamic Adjacency Matrix Generation:**
+   Construct a data-driven spatial graph using Pearson Correlation on historical traffic speed:
+   ```bash
+   python scripts/traffic_data_graph.py
+   ```
+   * Output: `outputs/adj_matrix.npy` and `outputs/correlation_matrix.csv`.
+
+---
+
+## 4. Model Training & Benchmarking
+
+The project implements a PyTorch pipeline to train baseline models like **STGCN** (Spatio-Temporal Graph Convolutional Networks).
+
+### Installation Dependencies
+```bash
+pip install torch pandas numpy requests python-dotenv
+```
+
+### Running the Baseline Training
+Execute the training script to load data, run training loops across epochs, and evaluate performance using Masked MAE, RMSE, and MAPE:
+```bash
+python train.py
+```
+
+---
+
+## 5. Evaluation Metrics
+
+Performance is measured using industry-standard metrics:
+- **MAE (Mean Absolute Error):** Average magnitude of absolute error in km/h.
+- **RMSE (Root Mean Square Error):** Standard deviation of prediction errors.
+- **MAPE (Mean Absolute Percentage Error):** Relative percentage error rate.
