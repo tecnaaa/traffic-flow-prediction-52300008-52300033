@@ -1,1 +1,6 @@
 .env
+__pycache__/
+*.pyc
+.vscode/
+outputs/*.pt
+outputs/*.npy
