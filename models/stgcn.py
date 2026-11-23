@@ -2,39 +2,74 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class GraphConv(nn.Module):
-    def __init__(self, in_features, out_features):
-        super(GraphConv, self).__init__()
-        self.weight = nn.Parameter(torch.FloatTensor(in_features, out_features))
-        nn.init.xavier_uniform_(self.weight)
+
+class TemporalGLU(nn.Module):
+    """Temporal gated convolution (Yu et al., 2018): (P + residual) * sigmoid(Q).
+
+    Input/Output layout: (Batch, Channels, Nodes, Time). No padding, so the time
+    axis shrinks by (kt - 1).
+    """
+    def __init__(self, c_in, c_out, kt):
+        super().__init__()
+        self.kt = kt
+        self.conv = nn.Conv2d(c_in, 2 * c_out, kernel_size=(1, kt))
+        self.align = nn.Conv2d(c_in, c_out, kernel_size=1) if c_in != c_out else nn.Identity()
+
+    def forward(self, x):
+        residual = self.align(x)[..., self.kt - 1:]
+        p, q = self.conv(x).chunk(2, dim=1)
+        return (p + residual) * torch.sigmoid(q)
+
+
+class SpatialGraphConv(nn.Module):
+    """First-order graph convolution: ReLU(A X W) over the node axis."""
+    def __init__(self, c_in, c_out):
+        super().__init__()
+        self.theta = nn.Conv2d(c_in, c_out, kernel_size=1)
 
     def forward(self, x, adj):
-        # x: (Batch, Nodes, Features)
-        # adj: (Nodes, Nodes) 
-        support = torch.matmul(x, self.weight)
-        output = torch.matmul(adj, support)
-        return F.relu(output)
+        # x: (B, C, N, T), adj: (N, N)
+        x = torch.einsum('nm,bcmt->bcnt', adj, x)
+        return F.relu(self.theta(x))
+
+
+class STConvBlock(nn.Module):
+    """Temporal GLU -> Spatial graph conv -> Temporal GLU."""
+    def __init__(self, c_in, c_spatial, c_out, kt):
+        super().__init__()
+        self.temporal1 = TemporalGLU(c_in, c_out, kt)
+        self.spatial = SpatialGraphConv(c_out, c_spatial)
+        self.temporal2 = TemporalGLU(c_spatial, c_out, kt)
+
+    def forward(self, x, adj):
+        x = self.temporal1(x)
+        x = self.spatial(x, adj)
+        return self.temporal2(x)
+
 
 class STGCN(nn.Module):
-    def __init__(self, num_nodes, in_dim, out_dim, seq_len):
-        super(STGCN, self).__init__()
-        self.gcn1 = GraphConv(in_dim, 64)
-        self.gcn2 = GraphConv(64, 32)
-        # Fully connected layer 
-        self.fc = nn.Linear(32 * seq_len, out_dim)
+    """STGCN baseline (simplified): two ST-Conv blocks + temporal output layer.
+
+    x:   (Batch, TimeSteps, Nodes, Features)
+    adj: (Nodes, Nodes) normalized adjacency
+    out: (Batch, Nodes, out_dim)
+    """
+    def __init__(self, num_nodes, in_dim, out_dim, seq_len, kt=3):
+        super().__init__()
+        # Each ST block shortens the time axis by 2 * (kt - 1); two blocks -> 4 * (kt - 1)
+        ko = seq_len - 4 * (kt - 1)
+        if ko < 1:
+            raise ValueError(f"seq_len={seq_len} is too short for kt={kt} "
+                             f"(needs seq_len >= {4 * (kt - 1) + 1})")
+        self.block1 = STConvBlock(in_dim, 16, 64, kt)
+        self.block2 = STConvBlock(64, 16, 64, kt)
+        self.output_temporal = TemporalGLU(64, 64, ko)  # collapses time axis to 1
+        self.output_fc = nn.Conv2d(64, out_dim, kernel_size=1)
 
     def forward(self, x, adj):
-        # x shape: (Batch, TimeSteps, Nodes, Features)
-        batch_size, time_steps, num_nodes, num_features = x.shape
-        
-        out = []
-        for t in range(time_steps):
-            gcn_out = self.gcn1(x[:, t, :, :], adj)
-            gcn_out = self.gcn2(gcn_out, adj)
-            out.append(gcn_out.unsqueeze(1))
-            
-        # (Batch, TimeSteps, Nodes, 32)
-        out = torch.cat(out, dim=1) 
-        out = out.permute(0, 2, 1, 3).reshape(batch_size, num_nodes, -1)
-        out = self.fc(out)
-        return out
+        x = x.permute(0, 3, 2, 1)             # (B, F, N, T)
+        x = self.block1(x, adj)
+        x = self.block2(x, adj)
+        x = self.output_temporal(x)            # (B, 64, N, 1)
+        x = self.output_fc(x).squeeze(-1)      # (B, out_dim, N)
+        return x.permute(0, 2, 1)              # (B, N, out_dim)
