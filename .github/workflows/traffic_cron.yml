@@ -1,52 +1,46 @@
+
 name: TomTom Traffic Data Collector
 
 on:
   schedule:
-    # Run automatically every 15 minutes
     - cron: "*/15 * * * *"
-  workflow_dispatch: # Allow manual trigger from GitHub UI for testing
+  workflow_dispatch:
 
 jobs:
   collect-data:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Grant bot permission to push CSV updates
+      contents: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: dev
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11" # Target Python version
+          python-version: "3.11"
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pandas
-          pip install python-dotenv requests pandas numpy
+          pip install requests pandas numpy python-dotenv
 
       - name: Run Data Collection Script
         env:
-          # Inject the GitHub Secret as an environment variable
           TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
-          # Force the Ubuntu server to use Vietnam Timezone (UTC+7)
           TZ: "Asia/Ho_Chi_Minh"
-        # Ensure this path matches where your script is located
         run: python scripts/traffic_data_collect.py
 
       - name: Commit and Push Data to GitHub
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # 1. Stage and commit the newly fetched data FIRST
+
           git add data/traffic_data.csv
           git commit -m "Auto-update: Fetch traffic data [skip ci]" || echo "No changes to commit"
-          
-          # 2. THEN pull the latest changes from the remote repository to avoid conflicts
-          git pull --rebase
-          
-          # 3. FINALLY push everything to GitHub
-          git push
+
+          git pull --rebase origin dev
+          git push origin dev
