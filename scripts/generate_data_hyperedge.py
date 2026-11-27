@@ -93,6 +93,8 @@ def main():
     parser.add_argument('--top-k', type=int, default=None)
     parser.add_argument('--steps-per-day', type=int, default=96)
     parser.add_argument('--no-detrend', action='store_true')
+    parser.add_argument('--tag', default='',
+            help='prefix added to output file names (e.g. "pems08_")')
     args = parser.parse_args()
 
     data = np.load(args.npz)['data']  # (T, N, F)
@@ -106,7 +108,7 @@ def main():
     rho = pearson_matrix(x[:train_len])
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    np.save(OUT_DIR / 'data_correlation_train.npy', rho)
+    np.save(OUT_DIR / f'{args.tag}data_correlation_train.npy', rho)
 
     off_diag = rho[~np.eye(N, dtype=bool)]
     print(f'Off-diagonal rho: mean={off_diag.mean():.3f}, '
@@ -120,9 +122,8 @@ def main():
         avg_size = H.sum(axis=0).mean() if n_edges else 0.0
         density = np.count_nonzero(G) / (N * N) * 100
         print(f'{tau:>5.2f} {n_edges:>12d} {avg_size:>9.2f} {density:>9.2f}%')
-        np.save(OUT_DIR / f'hyperedge_incidence_tau{tau:.2f}.npy', H)
-        np.save(OUT_DIR / f'hyperedge_operator_tau{tau:.2f}.npy', G)
-
+        np.save(OUT_DIR / f'hyperedge_incidence_{args.tag}tau{tau:.2f}.npy', H)
+        np.save(OUT_DIR / f'hyperedge_operator_{args.tag}tau{tau:.2f}.npy', G)
     print(f'\nSaved to {OUT_DIR}')
 
 

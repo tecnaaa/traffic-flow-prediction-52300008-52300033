@@ -128,7 +128,7 @@ def main():
     n_params = sum(p.numel() for p in model.parameters())
     print(f"Trainable parameters: {n_params:,}")
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    criterion = nn.MSELoss()
+    criterion = nn.L1Loss()
 
     ckpt_path = ROOT_DIR / 'outputs' / f'stgcn_{tag}_seed{args.seed}.pt'
     ckpt_path.parent.mkdir(parents=True, exist_ok=True)

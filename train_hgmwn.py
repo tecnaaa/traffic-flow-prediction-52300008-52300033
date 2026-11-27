@@ -22,6 +22,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from models.hgmwn import HGMWN, topk_sparsify
 
 ROOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT_DIR))
@@ -95,6 +96,8 @@ def parse_args():
                    help='minutes per time step of the dataset (for horizon labels)')
     p.add_argument('--patience', type=int, default=10)
     p.add_argument('--seed', type=int, default=42)
+    p.add_argument('--topk', type=int, default=0,
+            help='keep top-k neighbours per row of the physical graph (0 = off)')
     return p.parse_args()
 
 
@@ -103,8 +106,11 @@ def main():
     set_seed(args.seed)
     print(f"HGMWN | mode={args.mode} | device={DEVICE} | seed={args.seed}")
 
-    # 1. Graphs
-    adj_phys = row_normalize(np.load(args.phys_adj))
+        # 1. Graphs
+    adj_raw = np.load(args.phys_adj)
+    if args.topk > 0:
+        adj_raw = topk_sparsify(adj_raw, args.topk)  # sparsify before normalizing
+    adj_phys = row_normalize(adj_raw)
     num_nodes = adj_phys.shape[0]
     adj_phys_t = torch.FloatTensor(adj_phys).to(DEVICE)
 

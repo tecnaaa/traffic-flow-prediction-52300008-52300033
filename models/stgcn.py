@@ -22,15 +22,15 @@ class TemporalGLU(nn.Module):
 
 
 class SpatialGraphConv(nn.Module):
-    """First-order graph convolution: ReLU(A X W) over the node axis."""
+    """ReLU(W_nb (A X) + W_self X): giữ tín hiệu riêng của từng nút."""
     def __init__(self, c_in, c_out):
         super().__init__()
-        self.theta = nn.Conv2d(c_in, c_out, kernel_size=1)
+        self.theta_nb = nn.Conv2d(c_in, c_out, kernel_size=1)
+        self.theta_self = nn.Conv2d(c_in, c_out, kernel_size=1, bias=False)
 
     def forward(self, x, adj):
-        # x: (B, C, N, T), adj: (N, N)
-        x = torch.einsum('nm,bcmt->bcnt', adj, x)
-        return F.relu(self.theta(x))
+        agg = torch.einsum('nm,bcmt->bcnt', adj, x)
+        return F.relu(self.theta_nb(agg) + self.theta_self(x))
 
 
 class STConvBlock(nn.Module):
@@ -67,9 +67,10 @@ class STGCN(nn.Module):
         self.output_fc = nn.Conv2d(64, out_dim, kernel_size=1)
 
     def forward(self, x, adj):
-        x = x.permute(0, 3, 2, 1)             # (B, F, N, T)
+        last = x[:, -1, :, 0:1]               
+        x = x.permute(0, 3, 2, 1)
         x = self.block1(x, adj)
         x = self.block2(x, adj)
-        x = self.output_temporal(x)            # (B, 64, N, 1)
-        x = self.output_fc(x).squeeze(-1)      # (B, out_dim, N)
-        return x.permute(0, 2, 1)              # (B, N, out_dim)
+        x = self.output_temporal(x)
+        x = self.output_fc(x).squeeze(-1)      
+        return x.permute(0, 2, 1) + last       
